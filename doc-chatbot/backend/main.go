@@ -31,7 +31,7 @@ func main() {
 
 	app.Use(logger.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173,http://localhost:4173",
+		AllowOrigins: "http://localhost:5173,http://localhost:4173,https://www.mhhard.top",
 		AllowHeaders: "Origin, Content-Type, Accept, X-Session-Id",
 		AllowMethods: "GET, POST, PATCH, DELETE, OPTIONS",
 	}))

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AlertTriangle, FileText, Loader2, Paperclip, Send, Link, X } from 'lucide-react'
 import { useChatStore } from '../../store/chatStore'
 import { useFileStore } from '../../store/fileStore'
+import { useIsMobile } from '../../hooks/useIsMobile'
 import * as api from '../../api/files'
 
 const CONTEXT_CHAR_LIMIT = 100000
@@ -25,6 +26,7 @@ export function ChatInput() {
   const thumbsRef = useRef<InputThumb[]>([])
   thumbsRef.current = inputThumbs
 
+  const isMobile = useIsMobile()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { sendMessage, isStreaming } = useChatStore()
@@ -281,7 +283,7 @@ export function ChatInput() {
                 )}
                 <button
                   onClick={() => removeThumb(thumb.fileId)}
-                  className="absolute flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className={`absolute flex items-center justify-center transition-opacity ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}`}
                   style={{
                     top: -5, right: -5, width: 18, height: 18, borderRadius: '50%',
                     background: 'var(--bg-base)', border: '1.5px solid var(--border-default)',
@@ -318,7 +320,7 @@ export function ChatInput() {
             onChange={e => setText(e.target.value)}
             onKeyDown={handleKey}
             onPaste={handlePaste}
-            placeholder="发送消息... (Shift+Enter 换行)"
+            placeholder={isMobile ? '发送消息...' : '发送消息... (Shift+Enter 换行)'}
             rows={1}
             disabled={isStreaming}
             className="flex-1 resize-none outline-none bg-transparent text-sm leading-relaxed py-1"

@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sun, Moon, Bot, PanelLeftClose, PanelLeft } from 'lucide-react'
 import { FileManager } from '../files/FileManager'
 import { ChatPanel } from '../chat/ChatPanel'
 import { ToastContainer } from './Toast'
 import { useThemeStore } from '../../store/themeStore'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 export function AppLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const isMobile = useIsMobile()
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768)
   const { isDark, toggle } = useThemeStore()
+
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false)
+  }, [isMobile])
 
   return (
     <div className="flex flex-col h-screen" style={{ background: 'var(--bg-base)' }}>
@@ -18,7 +24,7 @@ export function AppLayout() {
           height: 48,
           borderBottom: '1px solid var(--border-subtle)',
           background: 'var(--bg-base)',
-          zIndex: 10,
+          zIndex: 60,
         }}
       >
         <button
@@ -54,15 +60,34 @@ export function AppLayout() {
 
       {/* Body */}
       <div className="flex flex-1 min-h-0">
+        {/* Mobile backdrop */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0"
+            style={{ background: 'rgba(0,0,0,0.45)', top: 48, zIndex: 40 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         <aside
-          className="flex-shrink-0 overflow-hidden transition-all"
-          style={{
+          className="flex-shrink-0 overflow-hidden"
+          style={isMobile ? {
+            position: 'fixed',
+            top: 48,
+            left: 0,
+            bottom: 0,
+            width: 272,
+            zIndex: 50,
+            background: 'var(--bg-sidebar)',
+            borderRight: '1px solid var(--border-subtle)',
+            transform: sidebarOpen ? 'translateX(0)' : 'translateX(-100%)',
+            transition: 'transform 250ms ease-in-out',
+          } : {
             width: sidebarOpen ? 272 : 0,
             background: 'var(--bg-sidebar)',
             borderRight: '1px solid var(--border-subtle)',
-            transitionDuration: '250ms',
-            transitionTimingFunction: 'ease-in-out',
+            transition: 'width 250ms ease-in-out',
           }}
         >
           <div style={{ width: 272, height: '100%' }}>

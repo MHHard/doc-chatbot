@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "ui-preview",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "3456"],
-      "port": 3456
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "doc-chatbot/frontend", "run", "dev"],
+      "port": 5173
     }
   ]
 }

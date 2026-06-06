@@ -94,6 +94,12 @@ macOS 可通过 Homebrew 安装 Poppler：
 brew install poppler
 ```
 
+Linux（Ubuntu/Debian）：
+
+```bash
+sudo apt-get install -y poppler-utils
+```
+
 ## 环境变量
 
 后端读取 `doc-chatbot/backend/.env`。可以从示例文件复制：
