@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文档助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-base: #0A0A0A;
+    --bg-sidebar: #111111;
+    --bg-surface: #1A1A1A;
+    --bg-elevated: #222222;
+    --border-subtle: #2A2A2A;
+    --border-default: #3A3A3A;
+    --text-primary: #F5F5F5;
+    --text-secondary: #A0A0A0;
+    --text-muted: #555555;
+    --accent: #2563EB;
+    --accent-hover: #3B82F6;
+    --accent-subtle: rgba(37,99,235,0.12);
+    --accent-border: rgba(37,99,235,0.35);
+    --status-pending: #F59E0B;
+    --status-ready: #10B981;
+    --status-error: #EF4444;
+    --shadow-modal: 0 20px 60px rgba(0,0,0,0.6);
+    --scrollbar-thumb: #2A2A2A;
+  }
+
+  /* Light mode */
+  html.light {
+    --bg-base: #F8F9FA;
+    --bg-sidebar: #FFFFFF;
+    --bg-surface: #F1F3F5;
+    --bg-elevated: #E9ECEF;
+    --border-subtle: #E0E3E7;
+    --border-default: #CED4DA;
+    --text-primary: #1A1A2E;
+    --text-secondary: #555F6D;
+    --text-muted: #AAB2BD;
+    --accent: #2563EB;
+    --accent-hover: #1D4ED8;
+    --accent-subtle: rgba(37,99,235,0.08);
+    --accent-border: rgba(37,99,235,0.25);
+    --status-pending: #D97706;
+    --status-ready: #059669;
+    --status-error: #DC2626;
+    --shadow-modal: 0 20px 60px rgba(0,0,0,0.15);
+    --scrollbar-thumb: #CED4DA;
+  }
+
+  /* Theme transition */
+  html { transition: background 200ms, color 200ms; }
+  html * { transition: background-color 200ms, border-color 200ms, color 200ms, box-shadow 200ms; }
+
+  html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+  /* Layout */
+  .app { display: flex; flex-direction: column; height: 100vh; }
+  .header { height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--border-subtle); background: var(--bg-base); flex-shrink: 0; z-index: 10; }
+  .body { display: flex; flex: 1; min-height: 0; }
+  .sidebar { width: 272px; background: var(--bg-sidebar); border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; flex-shrink: 0; transition: width 250ms ease; overflow: hidden; }
+  .sidebar.collapsed { width: 0; }
+  .sidebar-inner { width: 272px; display: flex; flex-direction: column; height: 100%; }
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+  /* Header */
+  .header-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: none; background: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
+  .header-btn:hover { background: var(--bg-surface); color: var(--text-secondary); }
+  .header-title { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+  .header-title svg { color: var(--accent); }
+
+  /* Sidebar */
+  .sidebar-header { padding: 14px 16px 10px; display: flex; align-items: center; gap-6px; flex-shrink: 0; }
+  .sidebar-header-title { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+  .sidebar-header-count { margin-left: auto; font-size: 12px; color: var(--text-muted); }
+
+  /* Upload Zone */
+  .upload-zone { margin: 4px 12px 8px; border: 2px dashed var(--border-default); border-radius: 10px; padding: 14px 12px; text-align: center; cursor: pointer; transition: border-color 150ms, background 150ms; flex-shrink: 0; }
+  .upload-zone:hover { border-color: var(--text-muted); }
+  .upload-zone.drag-active { border-color: var(--accent); background: var(--accent-subtle); }
+  .upload-zone-icon { color: var(--text-muted); margin-bottom: 5px; }
+  .upload-zone-text { font-size: 12px; color: var(--text-muted); }
+  .upload-zone-sub { font-size: 11px; color: #3A3A3A; margin-top: 2px; }
+
+  /* Select bar */
+  .select-bar { display: flex; align-items: center; justify-content: space-between; padding: 4px 14px 6px; flex-shrink: 0; }
+  .select-bar-text { font-size: 12px; color: var(--text-muted); }
+  .select-all-btn { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted); background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; transition: color 150ms; }
+  .select-all-btn:hover { color: var(--text-secondary); }
+
+  /* File list */
+  .file-list { flex: 1; overflow-y: auto; padding: 2px 0 8px; }
+
+  /* File item */
+  .file-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 12px; margin: 1px 8px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; transition: background 150ms, border-color 150ms; position: relative; }
+  .file-item:hover { background: #1C1C1C; }
+  .file-item:hover .file-actions { opacity: 1; }
+  .file-item.selected { background: var(--accent-subtle); border-color: var(--accent-border); }
+  .file-checkbox { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-default); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; transition: background 150ms, border-color 150ms; }
+  .file-item.selected .file-checkbox { background: var(--accent); border-color: var(--accent); }
+  .file-icon { flex-shrink: 0; margin-top: 1px; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4; }
+  .file-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+  .file-status { display: flex; align-items: center; gap: 3px; font-size: 11px; }
+  .file-size { font-size: 11px; color: var(--text-muted); }
+  .file-actions { opacity: 0; display: flex; align-items: center; gap: 1px; transition: opacity 150ms; flex-shrink: 0; margin-top: 0; }
+  .file-action-btn { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 5px; border: none; background: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; }
+  .file-action-btn:hover { background: var(--bg-elevated); color: var(--text-secondary); }
+  .file-action-btn.danger:hover { background: rgba(239,68,68,0.15); color: var(--status-error); }
+
+  /* Status colors */
+  .status-ready { color: var(--status-ready); }
+  .status-pending { color: var(--status-pending); }
+  .status-error { color: var(--status-error); }
+
+  /* Chat area */
+  .chat-toolbar { display: flex; justify-content: flex-end; padding: 8px 16px 0; flex-shrink: 0; min-height: 36px; }
+  .toolbar-btn { display: flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 8px; border: none; background: none; color: var(--text-muted); font-size: 12px; cursor: pointer; transition: background 150ms, color 150ms; font-family: inherit; }
+  .toolbar-btn:hover { background: var(--bg-surface); color: var(--text-secondary); }
+  .message-list { flex: 1; overflow-y: auto; padding: 16px 24px 8px; display: flex; flex-direction: column; gap: 20px; }
+  .message-row { display: flex; gap: 10px; }
+  .message-row.user { flex-direction: row-reverse; }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .avatar.user { background: var(--accent); }
+  .avatar.ai { background: var(--bg-surface); border: 1px solid var(--border-subtle); }
+  .message-content { max-width: 85%; display: flex; flex-direction: column; gap: 6px; }
+  .message-row.user .message-content { align-items: flex-end; max-width: 75%; }
+  .bubble { padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.7; }
+  .bubble.user { background: var(--accent); color: #fff; border-radius: 16px 16px 4px 16px; }
+  .bubble.ai { background: var(--bg-surface); color: var(--text-primary); border-radius: 16px 16px 16px 4px; border: 1px solid var(--border-subtle); }
+  .bubble-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 150ms; }
+  .message-content:hover .bubble-actions { opacity: 1; }
+  .bubble-action { display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; border: none; background: none; color: var(--text-muted); font-size: 12px; cursor: pointer; transition: background 150ms, color 150ms; font-family: inherit; }
+  .bubble-action:hover { background: var(--bg-surface); color: var(--text-secondary); }
+
+  /* Markdown */
+  .md h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin: 12px 0 6px; }
+  .md h3 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin: 10px 0 5px; }
+  .md p { margin-bottom: 8px; color: var(--text-secondary); }
+  .md ul, .md ol { padding-left: 18px; margin-bottom: 8px; }
+  .md li { margin-bottom: 4px; color: var(--text-secondary); }
+  .md code { background: var(--bg-elevated); color: var(--accent-hover); padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .md pre { background: var(--bg-base); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; margin: 8px 0; overflow-x: auto; }
+  .md pre code { background: none; padding: 0; color: var(--text-secondary); font-size: 12px; }
+  .md strong { color: var(--text-primary); font-weight: 600; }
+  .md blockquote { border-left: 2px solid var(--accent); padding-left: 12px; color: var(--text-secondary); margin: 8px 0; }
+  .md table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+  .md th { background: var(--bg-elevated); color: var(--text-primary); font-weight: 500; padding: 6px 10px; border: 1px solid var(--border-default); text-align: left; }
+  .md td { padding: 6px 10px; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+  .md tr:nth-child(even) td { background: var(--bg-elevated); }
+
+  /* Steps panel */
+  .steps-panel { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
+  .steps-header { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .step-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .step-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-label { flex: 1; }
+  .step-meta { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+  .step-done .step-label { color: var(--text-secondary); }
+  .step-active .step-label { color: var(--text-primary); }
+  .step-wait .step-label { color: #444; }
+
+  /* Streaming cursor */
+  .cursor { display: inline-block; width: 2px; height: 14px; background: var(--accent); margin-left: 2px; vertical-align: middle; animation: blink 0.8s step-end infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* Input area */
+  .input-area { flex-shrink: 0; padding: 8px 16px 10px; }
+  .context-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+  .context-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(37,99,235,0.08); border: 1px solid var(--accent-border); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--accent-hover); }
+  .input-box { display: flex; align-items: flex-end; gap: 8px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 8px 10px; transition: border-color 150ms; }
+  .input-box:focus-within { border-color: var(--border-default); }
+  .input-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: none; color: var(--text-muted); cursor: pointer; transition: background 150ms, color 150ms; flex-shrink: 0; }
+  .input-btn:hover { background: var(--bg-elevated); color: var(--text-secondary); }
+  textarea { flex: 1; background: none; border: none; outline: none; resize: none; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text-primary); line-height: 1.6; min-height: 22px; max-height: 120px; padding: 4px 0; }
+  textarea::placeholder { color: var(--text-muted); }
+  .send-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; transition: background 150ms, transform 100ms; flex-shrink: 0; }
+  .send-btn:hover { background: var(--accent-hover); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn.disabled { background: var(--bg-elevated); color: var(--text-muted); cursor: not-allowed; }
+  .input-disclaimer { text-align: center; font-size: 12px; color: #383838; margin-top: 7px; }
+
+  /* Animations */
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .spin { animation: spin 1s linear infinite; }
+  .fade-in { animation: fadeSlideIn 200ms ease-out; }
+
+  /* Empty state */
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 40px; }
+  .empty-icon-wrap { width: 56px; height: 56px; background: var(--bg-surface); border-radius: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-subtle); }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .empty-desc { font-size: 14px; color: var(--text-secondary); text-align: center; max-width: 260px; line-height: 1.7; }
+
+  /* Export format buttons */
+  .export-fmt-btn { display:flex; flex-direction:column; align-items:flex-start; gap:5px; padding:12px; border-radius:12px; border:1px solid var(--border-subtle); background:none; cursor:pointer; transition:border-color 150ms, background 150ms; font-family:inherit; }
+  .export-fmt-btn:hover { border-color: var(--accent); background: var(--accent-subtle); }
+
+  /* Demo tabs */
+  .demo-tabs { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; background: #1A1A1A; border: 1px solid #2A2A2A; border-radius: 12px; padding: 5px; z-index: 100; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+  .demo-tab { padding: 6px 14px; border-radius: 8px; border: none; background: none; color: var(--text-muted); font-size: 12px; font-family: inherit; cursor: pointer; transition: background 150ms, color 150ms; white-space: nowrap; }
+  .demo-tab.active { background: var(--accent); color: #fff; }
+
+  /* SVG icons helper */
+  svg { display: inline-block; vertical-align: middle; }
+
+  /* Tooltip */
+  [title] { position: relative; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header class="header">
+    <button class="header-btn" id="toggleSidebar" title="折叠侧栏">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+    </button>
+    <div class="header-title" style="flex:1">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3"/></svg>
+      文档助手
+    </div>
+    <button class="header-btn" id="themeToggle" title="切换主题" style="margin-left:auto;">
+      <!-- Moon icon (shown in light mode) -->
+      <svg id="iconMoon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <!-- Sun icon (shown in dark mode) -->
+      <svg id="iconSun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </header>
+
+  <div class="body">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-inner">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+          <div class="sidebar-header-title">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            文件管理
+          </div>
+          <span class="sidebar-header-count">4 个文件</span>
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-zone-icon">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="upload-zone-text">拖拽或点击上传</div>
+          <div class="upload-zone-sub">PDF · DOCX · 图片</div>
+        </div>
+
+        <!-- Select bar -->
+        <div class="select-bar">
+          <span class="select-bar-text" id="selectBarText">已选 2 个</span>
+          <button class="select-all-btn" id="selectAllBtn">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            全选
+          </button>
+        </div>
+
+        <!-- File list -->
+        <div class="file-list" id="fileList">
+
+          <!-- File 1: PDF, selected, ready -->
+          <div class="file-item selected" onclick="toggleFile(this)">
+            <div class="file-checkbox">
+              <svg width="10" height="10" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="file-icon">
+              <svg width="16" height="16" fill="none" stroke="#EF4444" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">2024年度财务报告.pdf</div>
+              <div class="file-meta">
+                <div class="file-status status-ready">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  已就绪
+                </div>
+                <span class="file-size">· 2.3 MB</span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="file-action-btn" title="重命名"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="file-action-btn" title="下载"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="file-action-btn danger" title="删除"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+          </div>
+
+          <!-- File 2: DOCX, selected, ready -->
+          <div class="file-item selected" onclick="toggleFile(this)">
+            <div class="file-checkbox">
+              <svg width="10" height="10" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="file-icon">
+              <svg width="16" height="16" fill="none" stroke="#3B82F6" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">产品需求文档_v2.docx</div>
+              <div class="file-meta">
+                <div class="file-status status-ready">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  已就绪
+                </div>
+                <span class="file-size">· 856 KB</span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="file-action-btn" title="重命名"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="file-action-btn" title="下载"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="file-action-btn danger" title="删除"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+          </div>
+
+          <!-- File 3: Image, not selected, pending -->
+          <div class="file-item" onclick="toggleFile(this)">
+            <div class="file-checkbox"></div>
+            <div class="file-icon">
+              <svg width="16" height="16" fill="none" stroke="#A855F7" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">合同扫描件.png</div>
+              <div class="file-meta">
+                <div class="file-status status-pending">
+                  <svg class="spin" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                  解析中...
+                </div>
+                <span class="file-size">· 4.1 MB</span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="file-action-btn" title="重命名"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="file-action-btn" title="下载"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="file-action-btn danger" title="删除"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+          </div>
+
+          <!-- File 4: PDF, error -->
+          <div class="file-item" onclick="toggleFile(this)">
+            <div class="file-checkbox"></div>
+            <div class="file-icon">
+              <svg width="16" height="16" fill="none" stroke="#EF4444" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            </div>
+            <div class="file-info">
+              <div class="file-name">旧版扫描档案.pdf</div>
+              <div class="file-meta">
+                <div class="file-status status-error">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  解析失败
+                </div>
+                <span class="file-size">· 12.7 MB</span>
+              </div>
+            </div>
+            <div class="file-actions">
+              <button class="file-action-btn" title="重命名"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="file-action-btn" title="下载"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+              <button class="file-action-btn danger" title="删除"><svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+            </div>
+          </div>
+
+        </div><!-- file-list -->
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Chat toolbar -->
+      <div class="chat-toolbar" id="chatToolbar" style="display:none;">
+        <button class="toolbar-btn">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          清空对话
+        </button>
+      </div>
+
+      <!-- Message list / empty state -->
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon-wrap">
+          <svg width="28" height="28" fill="none" stroke="#2563EB" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3"/></svg>
+        </div>
+        <div class="empty-title">文档分析助手</div>
+        <div class="empty-desc">在左侧上传文件并勾选，然后发送消息，我将帮你分析和总结文档内容。</div>
+      </div>
+
+      <div class="message-list" id="messageList" style="display:none;">
+        <!-- User message -->
+        <div class="message-row user fade-in">
+          <div class="avatar user">
+            <svg width="14" height="14" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="message-content">
+            <div class="bubble user">帮我总结这两份文档的核心内容，并对比它们的关键差异点。</div>
+          </div>
+        </div>
+
+        <!-- AI message with steps + response -->
+        <div class="message-row fade-in" id="aiMessageRow">
+          <div class="avatar ai">
+            <svg width="14" height="14" fill="none" stroke="#A0A0A0" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <div class="message-content" style="max-width:85%;">
+
+            <!-- Steps panel -->
+            <div class="steps-panel" id="stepsPanel">
+              <div class="steps-header">
+                <svg class="spin" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                正在处理...
+              </div>
+              <div class="step-row step-done">
+                <div class="step-icon" style="color: var(--status-ready)">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <span class="step-label">读取文件</span>
+                <span class="step-meta">2 个文件</span>
+              </div>
+              <div class="step-row step-done">
+                <div class="step-icon" style="color: var(--status-ready)">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <span class="step-label">提取文档内容</span>
+                <span class="step-meta">8,420 字</span>
+              </div>
+              <div class="step-row step-active">
+                <div class="step-icon" style="color: var(--accent)">
+                  <svg class="spin" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                </div>
+                <span class="step-label">分析文档结构...</span>
+              </div>
+              <div class="step-row step-wait">
+                <div class="step-icon" style="color:#333">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/></svg>
+                </div>
+                <span class="step-label">生成回答</span>
+              </div>
+            </div>
+
+            <!-- AI response (hidden until steps done) -->
+            <div class="bubble ai md" id="aiBubble" style="display:none;">
+              <h2>文档摘要对比</h2>
+              <h3>📄 2024年度财务报告</h3>
+              <p>报告涵盖全年营收、成本结构及利润分析，核心数据如下：</p>
+              <ul>
+                <li>全年营收同比增长 <strong>23.4%</strong>，达 18.7 亿元</li>
+                <li>净利润率提升至 <strong>12.8%</strong>，较上年改善 2.1 个百分点</li>
+                <li>研发投入占营收比例 <strong>8.5%</strong>，同比提高 1.2%</li>
+              </ul>
+              <h3>📋 产品需求文档 v2</h3>
+              <p>本版本重点描述新一代 AI 辅助功能模块，包含以下核心内容：</p>
+              <ul>
+                <li>智能文档解析与结构化提取</li>
+                <li>多模态内容理解（文字 + 图表）</li>
+                <li>用户权限体系重构方案</li>
+              </ul>
+              <h3>关键差异点</h3>
+              <table>
+                <tr><th>维度</th><th>财务报告</th><th>产品需求文档</th></tr>
+                <tr><td>文档性质</td><td>数据分析型</td><td>功能规划型</td></tr>
+                <tr><td>受众</td><td>管理层 / 投资方</td><td>研发 / 产品团队</td></tr>
+                <tr><td>时效性</td><td>历史数据汇总</td><td>未来功能规划</td></tr>
+              </table>
+              <blockquote>两份文档共同体现了公司在 AI 方向的持续投入：财务侧验证了研发增长，产品侧指明了技术落地路径。</blockquote>
+            </div>
+            <div class="bubble-actions" id="bubbleActions" style="display:none;">
+              <button class="bubble-action">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                复制
+              </button>
+              <button class="bubble-action" onclick="document.getElementById('exportModal').style.display='flex'">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Streaming message -->
+        <div class="message-row fade-in" id="streamingRow" style="display:none;">
+          <div class="avatar ai">
+            <svg width="14" height="14" fill="none" stroke="#A0A0A0" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2z"/><circle cx="12" cy="13" r="3"/></svg>
+          </div>
+          <div class="message-content" style="max-width:85%;">
+            <div class="steps-panel">
+              <div class="steps-header">
+                <svg class="spin" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+                正在处理...
+              </div>
+              <div class="step-row step-done">
+                <div class="step-icon" style="color: var(--status-ready)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <span class="step-label">读取文件</span><span class="step-meta">2 个文件</span>
+              </div>
+              <div class="step-row step-done">
+                <div class="step-icon" style="color: var(--status-ready)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <span class="step-label">提取文档内容</span><span class="step-meta">8,420 字</span>
+              </div>
+              <div class="step-row step-done">
+                <div class="step-icon" style="color: var(--status-ready)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                <span class="step-label">分析文档结构</span>
+              </div>
+              <div class="step-row step-active">
+                <div class="step-icon" style="color: var(--accent)"><svg class="spin" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg></div>
+                <span class="step-label">生成回答...</span>
+              </div>
+            </div>
+            <div class="bubble ai md" id="streamBubble"></div>
+          </div>
+        </div>
+
+      </div><!-- message-list -->
+
+      <!-- Input area -->
+      <div class="input-area">
+        <div class="context-bar">
+          <div class="context-pill">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            已选 2 个文件作为上下文
+          </div>
+        </div>
+        <div class="input-box">
+          <button class="input-btn" title="上传文件">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <textarea id="msgInput" placeholder="发送消息... (Shift+Enter 换行)" rows="1" onkeydown="handleKey(event)" oninput="adjustHeight(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="handleSend()">
+            <svg width="15" height="15" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="input-disclaimer">AI 可能犯错，请核实重要信息</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div id="exportModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); align-items:center; justify-content:center; z-index:200;" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:20px; padding:22px 22px 20px; width:320px; animation: fadeSlideIn 200ms ease-out; box-shadow:var(--shadow-modal);">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+      <span style="font-size:15px; font-weight:600; color:var(--text-primary);">导出内容</span>
+      <button onclick="document.getElementById('exportModal').style.display='none'" style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:7px; border:none; background:none; color:var(--text-muted); cursor:pointer; transition:background 150ms;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">导出范围</div>
+    <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 8px; border-radius:8px; transition:background 150ms;">
+        <input type="radio" name="exportScope" checked style="accent-color: var(--accent);"> 仅此条消息
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 8px; border-radius:8px; transition:background 150ms;">
+        <input type="radio" name="exportScope" style="accent-color: var(--accent);"> 完整对话
+      </label>
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.05em;">导出格式</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <button onclick="document.getElementById('exportModal').style.display='none'" class="export-fmt-btn">
+        <svg width="18" height="18" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-primary);">Markdown</span>
+        <span style="font-size:11px; color:var(--text-muted);">.md 格式</span>
+      </button>
+      <button onclick="document.getElementById('exportModal').style.display='none'" class="export-fmt-btn">
+        <svg width="18" height="18" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-primary);">PDF</span>
+        <span style="font-size:11px; color:var(--text-muted);">.pdf 格式</span>
+      </button>
+      <button onclick="document.getElementById('exportModal').style.display='none'" class="export-fmt-btn">
+        <svg width="18" height="18" fill="none" stroke="var(--text-secondary)" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-primary);">Word</span>
+        <span style="font-size:11px; color:var(--text-muted);">.docx 格式</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Demo tabs -->
+<div class="demo-tabs">
+  <button class="demo-tab active" onclick="showScene('empty')">空状态</button>
+  <button class="demo-tab" onclick="showScene('steps')">步骤处理中</button>
+  <button class="demo-tab" onclick="showScene('result')">结果展示</button>
+  <button class="demo-tab" onclick="showScene('streaming')">流式输出</button>
+</div>
+
+<script>
+  // Theme toggle
+  const html = document.documentElement;
+  const iconSun = document.getElementById('iconSun');
+  const iconMoon = document.getElementById('iconMoon');
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const isLight = html.classList.toggle('light');
+    iconSun.style.display = isLight ? 'none' : 'inline-block';
+    iconMoon.style.display = isLight ? 'inline-block' : 'none';
+  });
+
+  // Sidebar toggle
+  document.getElementById('toggleSidebar').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+  });
+
+  // Upload zone drag
+  const uz = document.getElementById('uploadZone');
+  uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('drag-active'); });
+  uz.addEventListener('dragleave', () => uz.classList.remove('drag-active'));
+  uz.addEventListener('drop', e => { e.preventDefault(); uz.classList.remove('drag-active'); });
+
+  // Toggle file selection
+  function toggleFile(el) {
+    el.classList.toggle('selected');
+    const cb = el.querySelector('.file-checkbox');
+    const isSelected = el.classList.contains('selected');
+    cb.innerHTML = isSelected ? '<svg width="10" height="10" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '';
+    updateSelectBar();
+  }
+
+  function updateSelectBar() {
+    const selected = document.querySelectorAll('.file-item.selected').length;
+    const total = document.querySelectorAll('.file-item').length;
+    document.getElementById('selectBarText').textContent = selected > 0 ? `已选 ${selected} 个` : '选择文件加入对话';
+  }
+
+  // Textarea auto height
+  function adjustHeight(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  }
+
+  function handleSend() {
+    const val = document.getElementById('msgInput').value.trim();
+    if (!val) return;
+    document.getElementById('msgInput').value = '';
+    showScene('steps');
+    setTimeout(() => showScene('streaming'), 2500);
+    setTimeout(() => showScene('result'), 6000);
+  }
+
+  // Streaming demo
+  let streamInterval;
+  const streamContent = `## 财务报告核心要点\n\n全年营收同比增长 **23.4%**，达 18.7 亿元。净利润率提升至 **12.8%**，研发投入占比 **8.5%**。\n\n## 产品需求文档要点\n\n本版本聚焦 AI 辅助功能模块：智能文档解析、多模态内容理解、用户权限体系重构。\n\n## 关键差异\n\n两份文档互为印证——财务报告验证了过去一年的研发投入成效，产品需求文档则描绘了未来的技术落地路径。`;
+
+  // Scene controller
+  function showScene(scene) {
+    clearInterval(streamInterval);
+    document.querySelectorAll('.demo-tab').forEach((t,i) => {
+      t.classList.toggle('active', ['empty','steps','result','streaming'][i] === scene);
+    });
+
+    const empty = document.getElementById('emptyState');
+    const list = document.getElementById('messageList');
+    const toolbar = document.getElementById('chatToolbar');
+    const stepsPanel = document.getElementById('stepsPanel');
+    const aiBubble = document.getElementById('aiBubble');
+    const bubbleActions = document.getElementById('bubbleActions');
+    const streamRow = document.getElementById('streamingRow');
+    const streamBubble = document.getElementById('streamBubble');
+
+    if (scene === 'empty') {
+      empty.style.display = 'flex';
+      list.style.display = 'none';
+      toolbar.style.display = 'none';
+    } else {
+      empty.style.display = 'none';
+      list.style.display = 'flex';
+      toolbar.style.display = 'flex';
+    }
+
+    if (scene === 'steps') {
+      stepsPanel.style.display = 'block';
+      aiBubble.style.display = 'none';
+      bubbleActions.style.display = 'none';
+      streamRow.style.display = 'none';
+      document.getElementById('aiMessageRow').style.display = 'flex';
+    } else if (scene === 'result') {
+      stepsPanel.style.display = 'none';
+      aiBubble.style.display = 'block';
+      bubbleActions.style.display = 'flex';
+      streamRow.style.display = 'none';
+      document.getElementById('aiMessageRow').style.display = 'flex';
+    } else if (scene === 'streaming') {
+      stepsPanel.style.display = 'none';
+      aiBubble.style.display = 'none';
+      bubbleActions.style.display = 'none';
+      streamRow.style.display = 'flex';
+      document.getElementById('aiMessageRow').style.display = 'flex';
+      streamBubble.innerHTML = '';
+      let i = 0;
+      const plain = streamContent.replace(/\*\*/g,'').replace(/## /g,'').replace(/\n\n/g,' ').replace(/\n/g,' ');
+      streamInterval = setInterval(() => {
+        if (i >= plain.length) { clearInterval(streamInterval); streamBubble.innerHTML = renderMd(streamContent); return; }
+        const chunk = plain.slice(0, i+= Math.ceil(Math.random()*4));
+        streamBubble.innerHTML = chunk + '<span class="cursor"></span>';
+      }, 40);
+    }
+  }
+
+  function renderMd(text) {
+    return text
+      .replace(/## (.*)/g, '<h2>$1</h2>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^/, '<p>').replace(/$/, '</p>');
+  }
+
+  // Init
+  showScene('empty');
+</script>
+</body>
+</html>

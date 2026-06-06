@@ -1,0 +1,50 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+*.iml
+
+# Backend (Go)
+doc-chatbot/backend/doc-chatbot
+doc-chatbot/backend/*.exe
+doc-chatbot/backend/vendor/
+doc-chatbot/backend/go.sum
+
+# Frontend (Node.js)
+doc-chatbot/frontend/node_modules/
+doc-chatbot/frontend/dist/
+doc-chatbot/frontend/build/
+doc-chatbot/frontend/.env
+doc-chatbot/frontend/.env.local
+doc-chatbot/frontend/.env.*.local
+
+# npm/yarn
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.pnp
+.pnp.js
+
+# Logs
+logs/
+*.log
+
+# OS
+Thumbs.db
+*.tmp
+
+# Uploads (保留目录结构，忽略上传的文件)
+doc-chatbot/backend/uploads/*
+!doc-chatbot/backend/uploads/.gitkeep
+
+# Environment
+.env
+.env.local
