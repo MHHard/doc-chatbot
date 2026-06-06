@@ -13,6 +13,7 @@
 
 # Backend (Go)
 doc-chatbot/backend/doc-chatbot
+doc-chatbot/backend/server
 doc-chatbot/backend/*.exe
 doc-chatbot/backend/vendor/
 doc-chatbot/backend/go.sum
