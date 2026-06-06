@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
 import { Copy, Download, User, Bot, Check } from 'lucide-react'
 import type { ChatMessage } from '../../types'
 import { StepsPanel } from './StepsPanel'
@@ -78,7 +79,7 @@ export function MessageBubble({ message }: Props) {
                 <div className="md">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeHighlight]}
+                    rehypePlugins={[rehypeRaw, rehypeHighlight]}
                   >
                     {message.content}
                   </ReactMarkdown>

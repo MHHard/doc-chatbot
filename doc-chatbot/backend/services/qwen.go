@@ -67,11 +67,12 @@ func BuildMessages(req models.ChatRequest, files []*models.FileInfo) []qwenMessa
 	}
 	_ = skipped
 
-	messages := []qwenMessage{{Role: "system", Content: systemPrompt}}
-
+	// Embed file content in system prompt so it is never displaced by history
 	if fileContent.Len() > 0 {
-		messages = append(messages, qwenMessage{Role: "user", Content: fileContent.String()})
+		systemPrompt += "\n\n---\n以下是用户上传的文档内容，请基于这些内容回答问题：\n\n" + fileContent.String()
 	}
+
+	messages := []qwenMessage{{Role: "system", Content: systemPrompt}}
 
 	// History (last 10)
 	history := req.History
