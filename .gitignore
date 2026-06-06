@@ -50,5 +50,5 @@ doc-chatbot/backend/uploads/*
 .env
 .env.local
 
-.history
+.history/
 .claude
