@@ -66,18 +66,18 @@ GET /api/chat/stream/:streamId?from=<lastSeq>
 
 ## 技术栈
 
-| 层 | 技术 |
-| --- | --- |
-| 前端 | React 18、TypeScript、Vite、Tailwind CSS |
-| 状态管理 | Zustand |
+| 层       | 技术                                         |
+| -------- | -------------------------------------------- |
+| 前端     | React 18、TypeScript、Vite、Tailwind CSS     |
+| 状态管理 | Zustand                                      |
 | Markdown | react-markdown、remark-gfm、rehype-highlight |
-| 上传交互 | react-dropzone |
-| 图标 | lucide-react |
-| 后端 | Go、Fiber v2 |
-| 模型调用 | DashScope OpenAI Compatible API |
-| 聊天模型 | `qwen-plus` |
-| OCR 模型 | `qwen-vl-ocr` |
-| PDF 工具 | `pdftotext`、`pdftoppm` |
+| 上传交互 | react-dropzone                               |
+| 图标     | lucide-react                                 |
+| 后端     | Go、Fiber v2                                 |
+| 模型调用 | DashScope OpenAI Compatible API              |
+| 聊天模型 | `qwen-plus`                                  |
+| OCR 模型 | `qwen-vl-ocr`                                |
+| PDF 工具 | `pdftotext`、`pdftoppm`                      |
 
 ## 环境要求
 
@@ -196,27 +196,27 @@ npm run build
 
 ### 文件接口
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/api/files/upload` | 上传文件 |
-| GET | `/api/files` | 获取文件列表 |
-| GET | `/api/files/:id/status` | 获取解析状态 |
-| GET | `/api/files/:id/download` | 下载原始文件 |
-| PATCH | `/api/files/:id/rename` | 重命名文件 |
-| DELETE | `/api/files/:id` | 删除文件 |
-| POST | `/api/files/:id/reparse` | 重新解析 |
+| 方法   | 路径                      | 说明         |
+| ------ | ------------------------- | ------------ |
+| POST   | `/api/files/upload`       | 上传文件     |
+| GET    | `/api/files`              | 获取文件列表 |
+| GET    | `/api/files/:id/status`   | 获取解析状态 |
+| GET    | `/api/files/:id/download` | 下载原始文件 |
+| PATCH  | `/api/files/:id/rename`   | 重命名文件   |
+| DELETE | `/api/files/:id`          | 删除文件     |
+| POST   | `/api/files/:id/reparse`  | 重新解析     |
 
 ### 聊天接口
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| POST | `/api/chat/stream` | 创建流式聊天 |
-| GET | `/api/chat/stream/:id?from=N` | 从指定 chunk 序号续传 |
+| 方法 | 路径                          | 说明                  |
+| ---- | ----------------------------- | --------------------- |
+| POST | `/api/chat/stream`            | 创建流式聊天          |
+| GET  | `/api/chat/stream/:id?from=N` | 从指定 chunk 序号续传 |
 
 ## 已知限制
 
 - 当前是单用户演示版本，没有登录、权限和多租户隔离。
 - 文件和聊天流缓存只保存在内存中，后端重启后会丢失。
-- PDF 扫描件需要走 OCR，速度取决于页数和 DashScope 响应时间。
+- PDF 扫描件先走本地，扫描不到再走走 OCR，速度取决于页数和 DashScope 响应时间。
 - 断线续传只能在后端进程仍然存活时生效。
 - 大文件和长文档会被截断或跳过部分上下文，以避免超过模型上下文限制。
