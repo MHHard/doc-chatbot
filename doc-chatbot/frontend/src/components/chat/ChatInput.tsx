@@ -177,6 +177,16 @@ export function ChatInput() {
     await uploadAndTrack(file)
   }, [pasteBanner, dismissBanner, uploadAndTrack])
 
+  const handleUploadInputAsDoc = useCallback(async () => {
+    if (!text.trim()) return
+    const now = new Date()
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+    const file = new File([text], `输入文本_${hhmm}.txt`, { type: 'text/plain' })
+    setText('')
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    await uploadAndTrack(file)
+  }, [text, uploadAndTrack])
+
   const charColor = charCount > CHAR_ERROR ? 'var(--status-error)' : charCount > CHAR_WARN ? 'var(--status-pending)' : 'var(--text-muted)'
 
   return (
@@ -354,13 +364,20 @@ export function ChatInput() {
       {/* Char warning text */}
       {charCount > CHAR_WARN && (
         <div className="mt-1 px-1" style={{ fontSize: 11, color: charColor }}>
-          {charCount > CHAR_ERROR ? '超出建议长度，可能影响回复质量' : '内容较长，建议上传为文档'}
+          {charCount > CHAR_ERROR ? (
+            <>
+              超出建议长度，可能影响回复质量，建议
+              <button
+                onClick={handleUploadInputAsDoc}
+                style={{ textDecoration: 'underline', color: charColor, fontSize: 11, background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+              >
+                上传成文档
+              </button>
+            </>
+          ) : '内容较长，建议上传为文档'}
         </div>
       )}
 
-      <div className="text-center mt-1" style={{ fontSize: 12, color: 'var(--disclaimer)' }}>
-        AI 可能犯错，请核实重要信息
-      </div>
     </div>
   )
 }

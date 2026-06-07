@@ -76,10 +76,17 @@ export function MessageBubble({ message }: Props) {
               <span style={{ whiteSpace: 'pre-wrap' }}>{message.content}</span>
             ) : (
               <>
-                <div className="md">
+                <div className="md" style={{ overflowX: 'hidden' }}>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                    components={{
+                      table: ({ ...props }) => (
+                        <div style={{ overflowX: 'auto', width: '100%' }}>
+                          <table {...props} />
+                        </div>
+                      ),
+                    }}
                   >
                     {message.content}
                   </ReactMarkdown>
