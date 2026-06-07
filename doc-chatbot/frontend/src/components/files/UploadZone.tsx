@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, Loader2 } from 'lucide-react'
 import { useFileStore } from '../../store/fileStore'
+import { useIsMobile } from '../../hooks/useIsMobile'
 
 const ACCEPTED_TYPES = {
   'application/pdf': ['.pdf'],
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function UploadZone({ onUploadStart }: Props) {
+  const isMobile = useIsMobile()
   const { uploadFile, uploadTasks } = useFileStore()
   const isUploading = uploadTasks.some(t => t.status === 'uploading')
   const flashRef = useRef<HTMLDivElement>(null)
@@ -32,7 +34,7 @@ export function UploadZone({ onUploadStart }: Props) {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: processFiles,
-    accept: ACCEPTED_TYPES,
+    accept: isMobile ? undefined : ACCEPTED_TYPES,
     maxSize: MAX_SIZE,
     multiple: true,
     noClick: false,

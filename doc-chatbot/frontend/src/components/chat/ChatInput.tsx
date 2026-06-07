@@ -8,6 +8,7 @@ import * as api from '../../api/files'
 const CONTEXT_CHAR_LIMIT = 100000
 const CHAR_WARN = 1000
 const CHAR_ERROR = 3000
+const DESKTOP_FILE_ACCEPT = '.pdf,.docx,.txt,.jpg,.jpeg,.png,.webp'
 
 interface InputThumb {
   fileId: string
@@ -190,7 +191,7 @@ export function ChatInput() {
   const charColor = charCount > CHAR_ERROR ? 'var(--status-error)' : charCount > CHAR_WARN ? 'var(--status-pending)' : 'var(--text-muted)'
 
   return (
-    <div className="flex-shrink-0 px-4 pb-2.5 pt-1">
+    <div className="flex-shrink-0 w-full max-w-[800px] mx-auto px-4 pt-1" style={{ paddingBottom: 'max(30px, env(safe-area-inset-bottom, 30px))' }}>
       {/* Context bar */}
       {selectedCount > 0 && (
         <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
@@ -320,7 +321,7 @@ export function ChatInput() {
           >
             <Paperclip size={16} strokeWidth={1.8} />
           </button>
-          <input ref={fileInputRef} type="file" multiple accept=".pdf,.docx,.txt,.jpg,.jpeg,.png,.webp"
+          <input ref={fileInputRef} type="file" multiple accept={isMobile ? undefined : DESKTOP_FILE_ACCEPT}
             style={{ display: 'none' }} onChange={handleFileInput} />
 
           {/* Textarea */}

@@ -94,13 +94,15 @@ export function MessageList() {
       <div
         ref={listRef}
         onScroll={handleScroll}
-        className="h-full overflow-y-auto px-6 py-4 flex flex-col gap-5"
+        className="h-full overflow-y-auto py-4"
       >
-        {messages.map(msg => (
-          <div key={msg.id} className="fade-in">
-            <MessageBubble message={msg} />
-          </div>
-        ))}
+        <div className="w-full max-w-[800px] mx-auto px-4 sm:px-6 flex flex-col gap-5">
+          {messages.map(msg => (
+            <div key={msg.id} className="fade-in">
+              <MessageBubble message={msg} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {showJumpToBottom && (
