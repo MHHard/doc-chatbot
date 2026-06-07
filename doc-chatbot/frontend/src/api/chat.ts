@@ -63,21 +63,44 @@ async function resumeStream(
   state: StreamState,
   onChunk: (text: string) => void
 ) {
-  const maxAttempts = 3
+  const maxAttempts = 12
   const replay = createSmoothReplay(onChunk)
   for (let attempt = 0; attempt < maxAttempts && !state.done; attempt++) {
-    if (attempt > 0) {
-      await new Promise(resolve => setTimeout(resolve, 800 * attempt))
+    await waitForNetwork(attempt)
+    try {
+      const res = await fetch(`/api/chat/stream/${state.streamId}?from=${state.seq}`, {
+        headers: { 'X-Session-Id': getSessionId() },
+      })
+      if (!res.ok) throw new Error('续传失败')
+      await readStream(res, state, replay.push)
+    } catch (err) {
+      if (attempt === maxAttempts - 1) throw err
     }
-    const res = await fetch(`/api/chat/stream/${state.streamId}?from=${state.seq}`, {
-      headers: { 'X-Session-Id': getSessionId() },
-    })
-    if (!res.ok) throw new Error('续传失败')
-    await readStream(res, state, replay.push)
   }
   await replay.drain()
   if (!state.done) {
     throw new Error('连接中断，自动续传失败')
+  }
+}
+
+async function waitForNetwork(attempt: number) {
+  if (attempt > 0) {
+    await new Promise(resolve => setTimeout(resolve, Math.min(1200 * attempt, 5000)))
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    await new Promise<void>((resolve) => {
+      const finish = () => {
+        window.clearTimeout(timer)
+        window.removeEventListener('online', handleOnline)
+        resolve()
+      }
+      const handleOnline = () => {
+        finish()
+      }
+      const timer = window.setTimeout(finish, 30000)
+      window.addEventListener('online', handleOnline)
+    })
   }
 }
 
