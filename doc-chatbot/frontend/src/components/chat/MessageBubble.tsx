@@ -32,7 +32,7 @@ export function MessageBubble({ message }: Props) {
 
   return (
     <>
-    <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex gap-2.5 min-w-0 ${isUser ? 'flex-row-reverse' : ''}`}>
       {/* Avatar */}
       <div
         className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -49,8 +49,8 @@ export function MessageBubble({ message }: Props) {
 
       {/* Message content */}
       <div
-        className={`group flex flex-col gap-0 ${isUser ? 'items-end' : 'items-start'}`}
-        style={{ maxWidth: isUser ? '75%' : '85%' }}
+        className={`group flex flex-col gap-0 min-w-0 ${isUser ? 'items-end' : 'items-start'}`}
+        style={{ width: '100%', maxWidth: isUser ? '75%' : '85%' }}
       >
         {/* Steps panel (AI only, while streaming with no content yet) */}
         {!isUser && showSteps && (
@@ -64,7 +64,7 @@ export function MessageBubble({ message }: Props) {
         {/* Bubble — only shown once content arrives, or always for user */}
         {(isUser || hasContent) && (
           <div
-            className="px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
+            className="max-w-full min-w-0 overflow-hidden px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed"
             style={{
               background: isUser ? '#2563EB' : 'var(--bg-surface)',
               color: isUser ? '#fff' : 'var(--text-primary)',
@@ -76,13 +76,13 @@ export function MessageBubble({ message }: Props) {
               <span style={{ whiteSpace: 'pre-wrap' }}>{message.content}</span>
             ) : (
               <>
-                <div className="md" style={{ overflowX: 'hidden' }}>
+                <div className="md max-w-full min-w-0">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw, rehypeHighlight]}
                     components={{
                       table: ({ ...props }) => (
-                        <div style={{ overflowX: 'auto', width: '100%' }}>
+                        <div className="md-table-scroll">
                           <table {...props} />
                         </div>
                       ),
