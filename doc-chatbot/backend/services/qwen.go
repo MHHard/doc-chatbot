@@ -67,12 +67,8 @@ func BuildMessages(req models.ChatRequest, files []*models.FileInfo) []qwenMessa
 	}
 	_ = skipped
 
-	// Embed file content in system prompt so it is never displaced by history
-	if fileContent.Len() > 0 {
-		systemPrompt += "\n\n---\n以下是用户上传的文档内容，请基于这些内容回答问题：\n\n" + fileContent.String()
-	}
-
 	messages := []qwenMessage{{Role: "system", Content: systemPrompt}}
+	hasCurrentFileContent := fileContent.Len() > 0
 
 	// History (last 10)
 	history := req.History
@@ -80,7 +76,17 @@ func BuildMessages(req models.ChatRequest, files []*models.FileInfo) []qwenMessa
 		history = history[len(history)-10:]
 	}
 	for _, h := range history {
+		if hasCurrentFileContent && shouldDropHistoryMessage(h) {
+			continue
+		}
 		messages = append(messages, qwenMessage{Role: h.Role, Content: h.Content})
+	}
+
+	if hasCurrentFileContent {
+		messages = append(messages, qwenMessage{
+			Role: "system",
+			Content: "本轮请求已经收到并解析了用户选中的文件。请忽略历史对话中关于“未收到文件”“没有文件上下文”“上传失败”的说法，以以下当前文件内容为准回答。\n\n---\n当前文件内容：\n\n" + fileContent.String(),
+		})
 	}
 
 	userMsg := req.Message
@@ -89,6 +95,30 @@ func BuildMessages(req models.ChatRequest, files []*models.FileInfo) []qwenMessa
 	}
 	messages = append(messages, qwenMessage{Role: "user", Content: userMsg})
 	return messages
+}
+
+func shouldDropHistoryMessage(h models.ChatMessage) bool {
+	if h.Role != "assistant" {
+		return false
+	}
+	content := strings.ToLower(h.Content)
+	dropPatterns := []string{
+		"未收到文件",
+		"没有收到文件",
+		"尚未接收到任何文件",
+		"未检测到文件",
+		"无文件数据",
+		"文件上下文已失效",
+		"请选择已解析完成的文件",
+		"_错误：",
+		"error:",
+	}
+	for _, pattern := range dropPatterns {
+		if strings.Contains(content, strings.ToLower(pattern)) {
+			return true
+		}
+	}
+	return false
 }
 
 // writeError writes an SSE error event so the frontend always gets feedback.
